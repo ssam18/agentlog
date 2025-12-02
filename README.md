@@ -46,7 +46,7 @@
 
 ### Why AgentLog?
 
-Traditional loggers like spdlog are fast but "dumb" - they passively record messages without understanding what's happening. AgentLog is **intelligent** - it actively monitors your application, learns normal behavior, detects anomalies, correlates events, predicts failures, and even creates incident tickets automatically.
+Traditional loggers like spdlog are fast but "dumb". They passively record messages without understanding what's happening. AgentLog is **intelligent**. It actively monitors your application, learns normal behavior, detects anomalies, correlates events, predicts failures, and even creates incident tickets automatically.
 
 ```mermaid
 graph LR
