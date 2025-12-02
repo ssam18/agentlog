@@ -591,8 +591,6 @@ The test program validates:
 4. **Incident Creation**: Automatic incident creation when score > threshold
 5. **External Integrations**: Jira tickets, PagerDuty alerts, Slack notifications
 
-See [TESTING_INTEGRATIONS.md](TESTING_INTEGRATIONS.md) for detailed testing guide.
-
 ### Incident Lifecycle
 
 Complete lifecycle from event detection to resolution:
