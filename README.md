@@ -199,169 +199,168 @@ make
 
 AgentLog employs a 4-layer architecture designed for high performance, intelligent analysis, and autonomous response:
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Your Application                             │
-│  (Payment Service, API Gateway, Database, Microservices, etc.)      │
-└────────────────────────────┬────────────────────────────────────────┘
-                             │
-                             ↓ Events (< 1μs latency)
-┌─────────────────────────────────────────────────────────────────────┐
-│                      INGESTION LAYER                                 │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐           │
-│  │  Event       │   │  Lock-Free   │   │   Worker     │           │
-│  │  Builder     │ → │  Ring Buffer │ → │   Threads    │           │
-│  │  (Fluent API)│   │  (8192 slots)│   │   (Pool)     │           │
-│  └──────────────┘   └──────────────┘   └──────────────┘           │
-└────────────────────────────┬────────────────────────────────────────┘
-                             │
-                             ↓ Structured Events
-┌─────────────────────────────────────────────────────────────────────┐
-│                    INTELLIGENCE LAYER                                │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Anomaly Detection (Ensemble)                                 │  │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │  │
-│  │  │  Z-Score   │ │  Moving    │ │   Rate     │ │ Ensemble │ │  │
-│  │  │  Detector  │ │   Average  │ │  Detector  │ │ Scoring  │ │  │
-│  │  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Pattern Engine                                               │  │
-│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐ │  │
-│  │  │ Regex Patterns │  │ Sequence       │  │ ML Patterns    │ │  │
-│  │  │ (auth, retry)  │  │ Detection      │  │ (adaptive)     │ │  │
-│  │  └────────────────┘  └────────────────┘  └────────────────┘ │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Correlation Engine                                           │  │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │  │
-│  │  │  Trace ID  │ │  Entity    │ │  Service   │ │Temporal  │ │  │
-│  │  │  Tracking  │ │  Grouping  │ │  Relation  │ │ Window   │ │  │
-│  │  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────────┘
-                             │
-                             ↓ Incidents
-┌─────────────────────────────────────────────────────────────────────┐
-│                       ACTION LAYER                                   │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Incident Manager                                             │  │
-│  │  • Severity Classification (CRITICAL/HIGH/MEDIUM/LOW)        │  │
-│  │  • Deduplication (prevent duplicate alerts)                  │  │
-│  │  • Auto-resolution (time-based)                              │  │
-│  │  • Root Cause Analysis                                       │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  External Integrations (Phase 3)                             │  │
-│  │  ┌──────────┐      ┌──────────┐      ┌──────────┐          │  │
-│  │  │   Jira   │      │PagerDuty │      │  Slack   │          │  │
-│  │  │  (Tickets)      │ (Alerts) │      │(Notify)  │          │  │
-│  │  └────┬─────┘      └────┬─────┘      └────┬─────┘          │  │
-│  └───────┼──────────────────┼──────────────────┼────────────────┘  │
-└──────────┼──────────────────┼──────────────────┼────────────────────┘
-           │                  │                  │
-           ↓                  ↓                  ↓
-    ┌─────────────┐   ┌──────────────┐   ┌─────────────┐
-    │ Jira Cloud  │   │  PagerDuty   │   │    Slack    │
-    │  REST API   │   │  Events API  │   │  Webhooks   │
-    └─────────────┘   └──────────────┘   └─────────────┘
+```mermaid
+graph TB
+    subgraph App["🚀 Your Application"]
+        A[Payment Service<br/>API Gateway<br/>Microservices]
+    end
+    
+    subgraph Ingestion["⚡ INGESTION LAYER"]
+        B[Event Builder<br/>Fluent API]
+        C[Lock-Free<br/>Ring Buffer<br/>8192 slots]
+        D[Worker Thread<br/>Pool]
+        B -->|< 100ns| C
+        C -->|Batched| D
+    end
+    
+    subgraph Intelligence["🧠 INTELLIGENCE LAYER"]
+        subgraph Anomaly["Anomaly Detection Ensemble"]
+            E1[Z-Score<br/>Detector]
+            E2[Moving<br/>Average]
+            E3[Rate<br/>Detector]
+            E4[Ensemble<br/>Scoring]
+            E1 & E2 & E3 --> E4
+        end
+        
+        subgraph Pattern["Pattern Recognition"]
+            F1[Regex<br/>Patterns]
+            F2[Sequence<br/>Detection]
+            F3[ML Adaptive<br/>Patterns]
+        end
+        
+        subgraph Correlation["Correlation Engine"]
+            G1[Trace ID<br/>Tracking]
+            G2[Entity<br/>Grouping]
+            G3[Service<br/>Relations]
+            G4[Temporal<br/>Window]
+        end
+    end
+    
+    subgraph Action["🎯 ACTION LAYER"]
+        H[Incident Manager<br/>• Severity Classification<br/>• Deduplication<br/>• Auto-resolution<br/>• Root Cause Analysis]
+        
+        subgraph Integrations["External Integrations"]
+            I1[📋 Jira<br/>Tickets]
+            I2[🚨 PagerDuty<br/>Alerts]
+            I3[💬 Slack<br/>Notifications]
+        end
+    end
+    
+    subgraph Storage["💾 STORAGE LAYER"]
+        J1[(RocksDB<br/>Time-Series)]
+        J2[(In-Memory<br/>Cache)]
+    end
+    
+    A -->|Events<br/>< 1μs| B
+    D -->|Structured Events| Anomaly
+    D --> Pattern
+    D --> Correlation
+    Anomaly & Pattern & Correlation -->|Incidents| H
+    H --> Integrations
+    H --> Storage
+    I1 -.->|REST API| K1[Jira Cloud]
+    I2 -.->|Events API| K2[PagerDuty]
+    I3 -.->|Webhooks| K3[Slack]
+    
+    style App fill:#90EE90
+    style Ingestion fill:#FFE4B5
+    style Intelligence fill:#87CEEB
+    style Action fill:#FFB6C1
+    style Storage fill:#DDA0DD
+    style Anomaly fill:#B0E0E6
+    style Pattern fill:#B0E0E6
+    style Correlation fill:#B0E0E6
+    style Integrations fill:#FFC0CB
+    style K1 fill:#0052CC
+    style K2 fill:#06AC38
+    style K3 fill:#4A154B
 ```
 
 ### Data Flow
 
-Here's how an event flows through the system:
+Here's how an event flows through the system from creation to external action:
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ 1. Event Creation (Application Code)                                 │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓
-    AGENTLOG_EVENT("api.request")
-        .entity("endpoint", "/checkout")
-        .metric("latency_ms", 245.0)
-        .emit();
-    ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 2. Event Builder → Structured LogEvent Object                        │
-│    • Timestamp: 2025-12-02T10:30:45.123Z                            │
-│    • Event Type: "api.request"                                       │
-│    • Entities: {endpoint: "/checkout"}                               │
-│    • Metrics: {latency_ms: 245.0}                                    │
-│    • Thread ID, Stack Trace (if enabled)                             │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 3. Lock-Free Queue (< 100ns enqueue)                                 │
-│    [Event] → [Event] → [Event] → [Event] → ...                      │
-│    Ring Buffer with atomic operations                                │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 4. Worker Thread Pool (Async Processing)                             │
-│    Thread 1: Anomaly Detection                                       │
-│    Thread 2: Pattern Matching                                        │
-│    Thread 3: Correlation Analysis                                    │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓                ↓                  ↓
-┌─────────────┐ ┌──────────────┐ ┌────────────────┐
-│  Anomaly    │ │  Pattern     │ │  Correlation   │
-│  Score:0.92 │ │  Match: Yes  │ │  Group: 3 evt  │
-│  (CRITICAL) │ │  (Auth Fail) │ │  (Same user)   │
-└─────────────┘ └──────────────┘ └────────────────┘
-    ↓                ↓                  ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 5. Incident Manager (Threshold: 0.75)                                │
-│    Score: 0.92 > 0.75 → CREATE INCIDENT                             │
-│    • Incident ID: INC-001                                            │
-│    • Severity: CRITICAL                                              │
-│    • Title: "High latency detected on /checkout"                     │
-│    • Description: "Anomaly score: 0.92, 3 correlated events"        │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 6. External Integrations (if configured)                             │
-│                                                                       │
-│    Jira:        POST /rest/api/3/issue                              │
-│                 → Ticket: PROJ-123 (Priority: Highest)               │
-│                                                                       │
-│    PagerDuty:   POST /v2/enqueue                                    │
-│                 → Alert: PD-INC-001 (Severity: critical)             │
-│                                                                       │
-│    Slack:       POST webhook                                         │
-│                 → Message: 🔥 Critical incident #incidents           │
-└──────────────────────────────────────────────────────────────────────┘
-    ↓
-┌──────────────────────────────────────────────────────────────────────┐
-│ 7. User Callbacks (if registered)                                    │
-│    on_anomaly([](const LogEvent& e) { ... });                       │
-│    on_incident_created([](const Incident& i) { ... });              │
-└──────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant App as 🚀 Application
+    participant Builder as Event Builder
+    participant Queue as Lock-Free Queue
+    participant Worker as Worker Thread
+    participant Anomaly as Anomaly Detector
+    participant Pattern as Pattern Engine
+    participant Corr as Correlation Engine
+    participant IM as Incident Manager
+    participant Jira as 📋 Jira
+    participant PD as 🚨 PagerDuty
+    participant Slack as 💬 Slack
+    participant User as 👤 User Callback
+    
+    App->>Builder: AGENTLOG_EVENT("api.request")<br/>.metric("latency_ms", 245.0)<br/>.emit()
+    Note over Builder: < 100ns
+    Builder->>Queue: Enqueue Event
+    Note over Queue: Ring Buffer<br/>Atomic Ops
+    
+    Queue->>Worker: Dequeue (Batched)
+    
+    par Parallel Analysis
+        Worker->>Anomaly: Analyze Metrics
+        Anomaly-->>Worker: Score: 0.92 🔴
+        Worker->>Pattern: Match Patterns
+        Pattern-->>Worker: Auth Fail ✓
+        Worker->>Corr: Correlate Events
+        Corr-->>Worker: Group: 3 events
+    end
+    
+    Worker->>IM: Create Incident<br/>Score: 0.92 > 0.75
+    Note over IM: INC-001<br/>CRITICAL<br/>"High latency on /checkout"
+    
+    par External Integrations
+        IM->>Jira: POST /rest/api/3/issue
+        Jira-->>IM: PROJ-123 Created
+        IM->>PD: POST /v2/enqueue
+        PD-->>IM: Alert Triggered
+        IM->>Slack: POST Webhook
+        Slack-->>IM: Message Sent
+    end
+    
+    IM->>User: on_incident_created()
+    Note over App,User: Total Time: < 100ms
 ```
 
 ### Component Architecture
 
 #### Anomaly Detection Pipeline
 
-```
-Input Event → Metric Extraction → Ensemble Scoring → Anomaly Flag
-                     ↓
-          ┌──────────┴─────────┐
-          ↓                    ↓
-    Statistical           Rate-Based
-      Analysis              Analysis
-          ↓                    ↓
-    ┌─────────┐          ┌─────────┐
-    │Z-Score: │          │ Rate:   │
-    │  0.85   │          │  0.78   │
-    └────┬────┘          └────┬────┘
-         │                    │
-         └──────────┬─────────┘
-                    ↓
-              Ensemble Score
-              (max/avg/vote)
-                    ↓
-              Score: 0.92
-           (ANOMALY if > 0.75)
+```mermaid
+graph LR
+    A[📊 Input Event<br/>latency_ms: 245] --> B[Extract Metrics]
+    B --> C{Ensemble<br/>Detectors}
+    
+    C --> D1[📈 Z-Score<br/>Detector]
+    C --> D2[📉 Moving<br/>Average]
+    C --> D3[⚡ Rate<br/>Detector]
+    
+    D1 --> E1[Score: 0.85]
+    D2 --> E2[Score: 0.78]
+    D3 --> E3[Score: 0.92]
+    
+    E1 & E2 & E3 --> F[🎯 Ensemble Voting<br/>Max/Avg/Vote]
+    
+    F --> G{Score > 0.75?}
+    G -->|Yes| H[🔴 ANOMALY]
+    G -->|No| I[🟢 NORMAL]
+    
+    H --> J[Create Alert<br/>Score: 0.92]
+    
+    style A fill:#E8F5E9
+    style C fill:#FFF3E0
+    style D1 fill:#E3F2FD
+    style D2 fill:#E3F2FD
+    style D3 fill:#E3F2FD
+    style F fill:#F3E5F5
+    style H fill:#FFCDD2
+    style I fill:#C8E6C9
+    style J fill:#FF8A80
 ```
 
 **Detectors**:
@@ -388,17 +387,41 @@ Input Event → Metric Extraction → Ensemble Scoring → Anomaly Flag
 
 #### Pattern Recognition
 
-```
-Event Stream → Pattern Matchers → Pattern Matches
-                      ↓
-        ┌─────────────┼─────────────┐
-        ↓             ↓             ↓
-   Regex          Sequence      ML-Based
-   Patterns       Detection     Patterns
-        ↓             ↓             ↓
-   Auth Burst    Cascading     Adaptive
-   Retry Storm   Failures      Learning
-   Memory Leak   Circuit Break
+```mermaid
+graph TB
+    A[📥 Event Stream] --> B{Pattern<br/>Matchers}
+    
+    B --> C1[🔤 Regex<br/>Patterns]
+    B --> C2[📊 Sequence<br/>Detection]
+    B --> C3[🤖 ML-Based<br/>Patterns]
+    
+    C1 --> D1[🔐 Auth Burst<br/>> 5 failures/60s]
+    C1 --> D2[🔄 Retry Storm<br/>> 10 retries]
+    C1 --> D3[💾 Memory Leak<br/>Monotonic ↑]
+    
+    C2 --> E1[⛓️ Cascading<br/>Failures]
+    C2 --> E2[🔌 Circuit<br/>Breaker]
+    
+    C3 --> F1[📚 Adaptive<br/>Learning]
+    C3 --> F2[🎯 Custom<br/>Patterns]
+    
+    D1 & D2 & D3 & E1 & E2 & F1 & F2 --> G[✅ Pattern Matches]
+    
+    G --> H[🚨 Trigger Actions]
+    
+    style A fill:#E8F5E9
+    style B fill:#FFF3E0
+    style C1 fill:#E3F2FD
+    style C2 fill:#F3E5F5
+    style C3 fill:#FFE0B2
+    style D1 fill:#FFCDD2
+    style D2 fill:#FFCDD2
+    style D3 fill:#FFCDD2
+    style E1 fill:#F8BBD0
+    style E2 fill:#F8BBD0
+    style F1 fill:#FFE082
+    style F2 fill:#FFE082
+    style H fill:#FF8A80
 ```
 
 **Built-in Patterns**:
@@ -411,24 +434,40 @@ Event Stream → Pattern Matchers → Pattern Matches
 
 #### Correlation Engine
 
-```
-Events → Grouping Strategies → Correlation Groups → Root Cause
-              ↓
-    ┌─────────┼─────────┬─────────┐
-    ↓         ↓         ↓         ↓
-  Trace    Entity   Service   Temporal
-   ID      Based    Based     Window
-    ↓         ↓         ↓         ↓
-  Same    Same User  Same      Within
-  Request  Across    Service   5 minutes
-           Events    Chain
-    └─────────┴─────────┴─────────┘
-              ↓
-       Correlated Groups
-       (3-10 events each)
-              ↓
-       Causality Analysis
-       (root cause → effects)
+```mermaid
+graph TB
+    A[📥 Multiple Events] --> B{Grouping<br/>Strategies}
+    
+    B --> C1[🔗 Trace ID<br/>Correlation]
+    B --> C2[👤 Entity-Based<br/>Grouping]
+    B --> C3[🔧 Service<br/>Relations]
+    B --> C4[⏰ Temporal<br/>Window]
+    
+    C1 --> D1[Same Request<br/>trace_id: xyz]
+    C2 --> D2[Same User<br/>user_id: 123]
+    C3 --> D3[Service Chain<br/>API → DB → Cache]
+    C4 --> D4[Within 5min<br/>Time Window]
+    
+    D1 & D2 & D3 & D4 --> E[🔗 Correlated Groups<br/>3-10 events each]
+    
+    E --> F{Causality<br/>Analysis}
+    
+    F --> G1[🎯 Root Cause<br/>Database Timeout]
+    F --> G2[📊 Effects<br/>API Latency ↑<br/>User Errors ↑]
+    
+    G1 & G2 --> H[📋 Incident Report<br/>with Full Context]
+    
+    style A fill:#E8F5E9
+    style B fill:#FFF3E0
+    style C1 fill:#E3F2FD
+    style C2 fill:#E1BEE7
+    style C3 fill:#FFE082
+    style C4 fill:#FFCCBC
+    style E fill:#C5E1A5
+    style F fill:#FFF59D
+    style G1 fill:#FFCDD2
+    style G2 fill:#FFECB3
+    style H fill:#A5D6A7
 ```
 
 **Correlation Strategies**:
@@ -559,110 +598,95 @@ See [TESTING_INTEGRATIONS.md](TESTING_INTEGRATIONS.md) for detailed testing guid
 
 ### Incident Lifecycle
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      INCIDENT LIFECYCLE                              │
-└─────────────────────────────────────────────────────────────────────┘
+Complete lifecycle from event detection to resolution:
 
- 1. Event Detection
-    ─────────────
-    Application emits event → AgentLog receives
+```mermaid
+stateDiagram-v2
+    [*] --> EventDetection: Application emits event
     
-    ↓
+    EventDetection --> Analysis: Event received
     
- 2. Analysis Phase
-    ─────────────
-    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-    │  Anomaly     │    │   Pattern    │    │ Correlation  │
-    │  Detection   │    │   Matching   │    │    Engine    │
-    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
-           │                   │                   │
-           └───────────────────┴───────────────────┘
-                              ↓
-                        Severity Score
-                        (0.0 - 1.0)
+    state Analysis {
+        [*] --> Anomaly: Check metrics
+        [*] --> Pattern: Match patterns
+        [*] --> Correlation: Group events
+        
+        Anomaly --> Scoring
+        Pattern --> Scoring
+        Correlation --> Scoring
+        
+        Scoring --> [*]: Severity Score (0.0-1.0)
+    }
     
-    ↓
+    Analysis --> ThresholdCheck: Score calculated
     
- 3. Incident Creation (if score > threshold)
-    ──────────────────
-    ┌────────────────────────────────────────┐
-    │ Incident Object Created                │
-    │ • ID: INC-001                         │
-    │ • Severity: CRITICAL                  │
-    │ • Title: "High latency on /checkout"  │
-    │ • Events: [event1, event2, event3]    │
-    │ • Root Cause: API timeout             │
-    │ • Timestamp: 2025-12-02T10:30:45Z    │
-    └────────────────────────────────────────┘
+    state ThresholdCheck <<choice>>
+    ThresholdCheck --> NoIncident: Score < 0.75
+    ThresholdCheck --> CreateIncident: Score ≥ 0.75
     
-    ↓
+    NoIncident --> [*]: Normal operation
     
- 4. Deduplication Check
-    ──────────────────
-    Similar incident exists?
-    • Compare title/severity/entities
-    • Within time window (5min)?
+    CreateIncident --> Deduplication: INC-001 created<br/>CRITICAL
     
-    YES → Merge with existing
-    NO  → Continue as new incident
+    state Deduplication <<choice>>
+    Deduplication --> MergeIncident: Similar exists<br/>(5min window)
+    Deduplication --> DispatchIntegrations: New incident
     
-    ↓
+    MergeIncident --> DispatchIntegrations: Updated incident
     
- 5. External Integration Dispatch
-    ───────────────────────────────
-    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-    │    Jira     │  │  PagerDuty  │  │    Slack    │
-    │             │  │             │  │             │
-    │ Create      │  │ Trigger     │  │ Send        │
-    │ Ticket      │  │ Alert       │  │ Notification│
-    │             │  │             │  │             │
-    │ PROJ-123    │  │ PD-INC-001  │  │ #incidents  │
-    │ Priority: 🔥 │  │ Severity: 🚨│  │ @team       │
-    └─────────────┘  └─────────────┘  └─────────────┘
+    state DispatchIntegrations {
+        [*] --> Jira: Create ticket
+        [*] --> PagerDuty: Trigger alert
+        [*] --> Slack: Send notification
+        
+        Jira --> [*]: PROJ-123
+        PagerDuty --> [*]: Alert sent
+        Slack --> [*]: Message posted
+    }
     
-    ↓
+    DispatchIntegrations --> UserCallback: Integrations done
+    UserCallback --> Monitoring: on_incident_created()
     
- 6. User Callback (optional)
-    ───────────────────────
-    on_incident_created([](const Incident& inc) {
-        // Custom handling
-        log_to_dashboard(inc);
-        notify_team(inc);
-    });
+    state Monitoring {
+        Open --> Acknowledged: Team notified
+        Acknowledged --> Resolved: Issue fixed
+        
+        state AutoResolve <<choice>>
+        Open --> AutoResolve: Check conditions
+        AutoResolve --> Resolved: No activity 5min
+        AutoResolve --> Open: Still active
+    }
     
-    ↓
+    Monitoring --> PostAnalysis: Incident resolved
     
- 7. Monitoring & Resolution
-    ──────────────────────
-    Incident Status: OPEN → ACKNOWLEDGED → RESOLVED
+    state PostAnalysis {
+        [*] --> StoreDB: Save incident
+        [*] --> UpdateML: Adaptive learning
+        [*] --> GenerateReport: MTTR tracking
+        
+        StoreDB --> [*]
+        UpdateML --> [*]
+        GenerateReport --> [*]
+    }
     
-    Auto-resolution triggers:
-    • No new related events for X minutes
-    • Anomaly score drops below threshold
-    • Manual resolution via API
-    
-    ↓
-    
- 8. Post-Incident Analysis
-    ─────────────────────
-    ✅ Store in incident database
-    ✅ Update ML models (adaptive learning)
-    ✅ Generate incident report
-    ✅ Track MTTR (Mean Time To Resolution)
+    PostAnalysis --> [*]: Complete
 
-Timeline Example:
-─────────────────
-10:30:45.123 → Event detected (latency: 2450ms)
-10:30:45.124 → Anomaly score: 0.92 (CRITICAL)
-10:30:45.125 → Incident INC-001 created
-10:30:45.150 → Jira ticket PROJ-123 created
-10:30:45.180 → PagerDuty alert triggered
-10:30:45.200 → Slack notification sent
-10:30:45.201 → User callback executed
-10:35:00.000 → Auto-resolved (5min no activity)
-
-Total time: < 100ms (event → all integrations)
+    note right of CreateIncident
+        Incident Details:
+        • ID: INC-001
+        • Severity: CRITICAL
+        • Title: "High latency"
+        • Root Cause: API timeout
+        • Events: 3 correlated
+    end note
+    
+    note right of DispatchIntegrations
+        Total Time: < 100ms
+        10:30:45.123 → Event
+        10:30:45.150 → Jira
+        10:30:45.180 → PagerDuty
+        10:30:45.200 → Slack
+    end note
 ```
 
 ## API Reference
@@ -788,60 +812,83 @@ std::cout << "Incidents: " << stats.incidents_created << "\n";
 
 ### Async Pipeline Architecture
 
+```mermaid
+graph TB
+    subgraph AppThread["🚀 Application Thread < 1μs"]
+        A1[AGENTLOG_EVENT] --> A2[Event Builder<br/>< 100ns]
+        A2 --> A3[Enqueue<br/>< 100ns]
+    end
+    
+    subgraph Queue["⚡ Lock-Free Ring Buffer"]
+        B1[Slot 1]
+        B2[Slot 2]
+        B3[Slot 3]
+        B4[...]
+        B5[Slot 8192]
+        B1 ~~~ B2 ~~~ B3 ~~~ B4 ~~~ B5
+    end
+    
+    subgraph Workers["🔧 Worker Thread Pool"]
+        subgraph T1["Thread 1"]
+            C1[Anomaly<br/>Detection<br/>~500μs]
+        end
+        subgraph T2["Thread 2"]
+            C2[Pattern<br/>Matching<br/>~300μs]
+        end
+        subgraph T3["Thread 3"]
+            C3[Correlation<br/>Engine<br/>~200μs]
+        end
+    end
+    
+    subgraph Storage["💾 Storage ~100μs"]
+        D1[(RocksDB<br/>Time-Series)]
+        D2[(Memory<br/>Cache)]
+    end
+    
+    subgraph Manager["🎯 Incident Manager"]
+        E1[Severity<br/>Scoring]
+        E2[Deduplication]
+        E3[Auto-Resolution]
+    end
+    
+    subgraph External["🌐 External APIs ~200ms async"]
+        F1[📋 Jira]
+        F2[🚨 PagerDuty]
+        F3[💬 Slack]
+    end
+    
+    A3 --> Queue
+    Queue --> C1 & C2 & C3
+    C1 & C2 & C3 --> E1
+    E1 --> E2 --> E3
+    E3 --> Storage
+    E3 -.->|Non-blocking| External
+    
+    style AppThread fill:#90EE90
+    style Queue fill:#FFE4B5
+    style Workers fill:#87CEEB
+    style T1 fill:#B0E0E6
+    style T2 fill:#B0E0E6
+    style T3 fill:#B0E0E6
+    style Storage fill:#DDA0DD
+    style Manager fill:#FFB6C1
+    style External fill:#F0E68C
+    style F1 fill:#0052CC
+    style F2 fill:#06AC38
+    style F3 fill:#4A154B
 ```
-Application Thread          Worker Thread Pool          Storage/Actions
-─────────────────          ──────────────────          ───────────────
-                                                        
-AGENTLOG_EVENT()                                        
-     ↓ (< 100ns)                                        
-┌──────────┐                                            
-│ Event    │                                            
-│ Builder  │                                            
-└────┬─────┘                                            
-     ↓                                                  
-┌────────────────────┐                                  
-│ Lock-Free Queue    │                                  
-│ (Ring Buffer)      │                                  
-│                    │                                  
-│ [E][E][E][E][E]... │                                  
-│  ↑ write           │                                  
-│  └ read            │                                  
-└──────┬─────────────┘                                  
-       │                                                
-       ↓ (batched)                                      
-       │            Thread 1        Thread 2            
-       │          ┌──────────┐    ┌──────────┐         
-       ├─────────→│ Anomaly  │    │ Pattern  │         
-       │          │ Detection│    │ Matching │         
-       │          └────┬─────┘    └────┬─────┘         
-       │               ↓               ↓               
-       │          ┌────────────────────┐              
-       │          │  Incident Manager  │              
-       │          └──────┬─────────────┘              
-       │                 ↓                            
-       │          ┌──────────────┐                    
-       └─────────→│   RocksDB    │                    
-                  │   Storage    │                    
-                  └──────────────┘                    
-                         ↓                            
-                  ┌──────────────┐                    
-                  │  External    │                    
-                  │ Integrations │                    
-                  └──────────────┘                    
-                         ↓                            
-                Jira | PagerDuty | Slack              
 
-⏱️ Latency Breakdown:
-─────────────────────
-Event Creation:       < 100ns  (stack allocation)
-Queue Enqueue:        < 100ns  (lock-free atomic)
-Worker Processing:    ~500μs   (anomaly detection)
-Storage Write:        ~100μs   (batched)
-External API:         ~200ms   (async, non-blocking)
-─────────────────────
-Total (blocking):     < 1μs    ← Application sees this
-Total (end-to-end):   ~200ms   (for full pipeline)
-```
+**⏱️ Latency Breakdown:**
+
+| Stage | Time | Blocking? | Notes |
+|-------|------|-----------|-------|
+| Event Creation | < 100ns | ✅ Yes | Stack allocation |
+| Queue Enqueue | < 100ns | ✅ Yes | Lock-free atomic |
+| **Application Sees** | **< 1μs** | **✅ Total** | **Returns to app** |
+| Worker Processing | ~500μs | ❌ No | Anomaly detection |
+| Storage Write | ~100μs | ❌ No | Batched writes |
+| External APIs | ~200ms | ❌ No | Async, non-blocking |
+| **End-to-End** | **~200ms** | **❌ No** | **Full pipeline** |
 
 **Key Optimizations**:
 
