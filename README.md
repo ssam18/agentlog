@@ -48,20 +48,33 @@
 
 Traditional loggers like spdlog are fast but "dumb" - they passively record messages without understanding what's happening. AgentLog is **intelligent** - it actively monitors your application, learns normal behavior, detects anomalies, correlates events, predicts failures, and even creates incident tickets automatically.
 
-```
-Traditional Logging          →          AgentLog
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Application                              Application
-     ↓                                        ↓
-  Log File                                 Events
-     ↓                                        ↓
-Human Analysis                          AI Analysis
-     ↓                                   ↓    ↓    ↓
-Manual Response              Anomaly   Pattern  Correlation
-                                 ↓       ↓        ↓
-                              Automated Incident Response
-                                       ↓
-                              Jira | PagerDuty | Slack
+```mermaid
+graph LR
+    subgraph Traditional["Traditional Logging"]
+        A1[Application] --> A2[Log File]
+        A2 --> A3[Human Analysis]
+        A3 --> A4[Manual Response]
+    end
+    
+    subgraph AgentLog["AgentLog"]
+        B1[Application] --> B2[Events]
+        B2 --> B3[AI Analysis]
+        B3 --> B4[Anomaly Detection]
+        B3 --> B5[Pattern Recognition]
+        B3 --> B6[Correlation Engine]
+        B4 & B5 & B6 --> B7[Automated Incident Response]
+        B7 --> B8[📋 Jira]
+        B7 --> B9[🚨 PagerDuty]
+        B7 --> B10[💬 Slack]
+    end
+    
+    style Traditional fill:#FFE4E1
+    style AgentLog fill:#E8F5E9
+    style A4 fill:#FFA07A
+    style B7 fill:#90EE90
+    style B8 fill:#87CEEB
+    style B9 fill:#FFB6C1
+    style B10 fill:#DDA0DD
 ```
 
 ### Key Features
