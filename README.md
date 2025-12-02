@@ -825,7 +825,7 @@ std::cout << "Incidents: " << stats.incidents_created << "\n";
 
 ```mermaid
 graph TB
-    subgraph AppThread["🚀 Application Thread < 1μs"]
+    subgraph AppThread["🚀 Application Thread (< 1 microsecond)"]
         A1[AGENTLOG_EVENT] --> A2[Event Builder<br/>< 100ns]
         A2 --> A3[Enqueue<br/>< 100ns]
     end
