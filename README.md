@@ -902,10 +902,6 @@ graph TB
 
 Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file.
-
 ## Citation
 
 If you use AgentLog in research, please cite:
