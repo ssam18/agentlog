@@ -1,7 +1,6 @@
 # AgentLog - AI-Powered Logging Library for C++
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](https://github.com/SamareshSingh/agentlog)
+[![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](https://github.com/ssam18/agentlog)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)]()
 
@@ -156,7 +155,7 @@ See the `examples/` directory:
   ./examples/payment_service
   ```
 
-### Integration Examples (Phase 3)
+### Integration Examples
 
 - **integration_demo.cpp** - Demonstrates Jira, PagerDuty, and Slack integrations
   ```bash
@@ -477,8 +476,6 @@ graph TB
 3. **Service Correlation**: Links service dependencies
 4. **Temporal Correlation**: Time-window grouping (5min default)
 
-See [PHASE1_COMPLETE.md](PHASE1_COMPLETE.md), [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md), and [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md) for detailed architecture documentation.
-
 ## Anomaly Detection
 
 AgentLog uses an ensemble of detectors:
@@ -520,7 +517,7 @@ config.incident_threshold = 0.75;  // Anomaly score threshold
 agentlog::global::init(config);
 ```
 
-### Integration Configuration (Phase 3)
+### Integration Configuration
 
 Configure external integrations via environment variables:
 
@@ -731,26 +728,35 @@ std::cout << "Anomalies: " << stats.anomalies_detected << "\n";
 std::cout << "Incidents: " << stats.incidents_created << "\n";
 ```
 
-## Comparison with spdlog
+## Comparison with Popular C++ Loggers
 
-| Feature | spdlog | AgentLog |
-|---------|--------|----------|
-| Speed | ⚡ Very fast (< 1μs) | ⚡ Very fast (< 1μs) |
-| Structured logging | ❌ No | ✅ Yes |
-| Anomaly detection | ❌ No | ✅ Yes (ensemble ML) |
-| Pattern recognition | ❌ No | ✅ Yes |
-| Predictive analytics | ❌ No | ✅ Yes |
-| Incident automation | ❌ No | ✅ Yes |
-| OpenTelemetry | ❌ No | ✅ Native |
-| Context capture | Basic | Rich (stack, variables) |
+| Feature | spdlog | Boost.Log | glog | Easylogging++ | AgentLog |
+|---------|--------|-----------|------|---------------|----------|
+| **Performance** | ⚡ < 1μs | ~5μs | ~2μs | ~3μs | ⚡ < 1μs |
+| **Async Logging** | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes (lock-free) |
+| **Structured Events** | ❌ No | ⚠️ Limited | ❌ No | ❌ No | ✅ Yes (native) |
+| **Anomaly Detection** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Ensemble ML |
+| **Pattern Recognition** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ ML-based |
+| **Correlation Engine** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Multi-strategy |
+| **Incident Management** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Automated |
+| **External Integrations** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Jira/PD/Slack |
+| **Format Flexibility** | ✅ Custom | ✅ Custom | ⚠️ Limited | ✅ Custom | ✅ JSON/Custom |
+| **Thread Safety** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Dependencies** | ⚠️ Header-only | Many | ❌ gflags | ⚠️ Header-only | libcurl |
+| **Learning Curve** | Easy | Complex | Easy | Easy | Medium |
+| **Best For** | Fast text logs | Enterprise apps | Google-style | Quick setup | AI-powered ops |
 
-**Use spdlog when:** You need simple, fast text logging
+**When to use each:**
 
-**Use AgentLog when:** You want intelligent observability with autonomous anomaly detection and incident management
+- **spdlog**: Fast, simple text logging with minimal setup
+- **Boost.Log**: Enterprise applications already using Boost ecosystem
+- **glog**: Google-style applications, existing gflags users
+- **Easylogging++**: Quick prototypes, header-only convenience
+- **AgentLog**: Production systems requiring intelligent monitoring, anomaly detection, and automated incident response
 
 ## Roadmap
 
-### Phase 1 - Core Foundation ✅ (Complete)
+### Phase 1 - Core Foundation ✅
 - ✅ Structured event model with fluent API
 - ✅ Async ingestion pipeline (lock-free ring buffer)
 - ✅ Statistical anomaly detectors (Z-score, Moving Average, Rate-based)
@@ -758,9 +764,7 @@ std::cout << "Incidents: " << stats.incidents_created << "\n";
 - ✅ Basic storage backend (in-memory + RocksDB)
 - ✅ Comprehensive unit tests
 
-**Status**: Production-ready. See [PHASE1_COMPLETE.md](PHASE1_COMPLETE.md)
-
-### Phase 2 - Intelligence ✅ (Complete)
+### Phase 2 - Intelligence ✅
 - ✅ ML pattern recognition (auth failures, retry storms, cascading failures)
 - ✅ Correlation engine (trace ID, entity-based, service-based, temporal)
 - ✅ Time-series analysis with Welford's algorithm
@@ -768,17 +772,13 @@ std::cout << "Incidents: " << stats.incidents_created << "\n";
 - ✅ Incident Manager with auto-resolution
 - ✅ Root cause analysis
 
-**Status**: Production-ready. See [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md)
-
-### Phase 3 - Integration ✅ (Complete)
+### Phase 3 - External Integrations ✅
 - ✅ Jira Cloud REST API integration (automatic ticket creation)
 - ✅ PagerDuty Events API integration (alert routing)
 - ✅ Slack webhook integration (notifications)
 - ✅ Comprehensive integration testing suite
 - ✅ Interactive configuration tool (setup_test.sh)
 - ✅ Environment-based configuration
-
-**Status**: Production-ready. See [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md)
 
 ### Phase 4 - Advanced Observability (3-4 months)
 - [ ] OpenTelemetry full integration (traces + metrics + logs)
