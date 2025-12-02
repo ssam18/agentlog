@@ -900,7 +900,7 @@ graph TB
 
 ## Contributing
 
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ## Citation
 
