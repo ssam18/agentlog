@@ -17,15 +17,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
 # Link against AgentLog library
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build/lib)
 
-# Build simple payment demo (standalone, doesn't require AgentLog library)
-add_executable(simple_payment_demo simple_payment_demo.cpp)
-target_link_libraries(simple_payment_demo 
-    PRIVATE 
-    Threads::Threads
-    CURL::libcurl
-)
-
-# Build full payment demo (uses AgentLog library with AI features)
+# Build payment demo (uses AgentLog library with AI features)
 add_executable(payment_demo payment_demo.cpp)
 target_link_libraries(payment_demo 
     PRIVATE 
