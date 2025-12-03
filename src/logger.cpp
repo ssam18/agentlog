@@ -7,6 +7,7 @@
 #include "agentlog/correlation_engine.h"
 #include "agentlog/incident_manager.h"
 #include <iostream>
+#include <fstream>
 #include <random>
 #include <condition_variable>
 #include <queue>
@@ -85,6 +86,16 @@ void Logger::init(const Config& config) {
     }
     
     config_ = config;
+    
+    // Open log file if configured
+    if (!config.log_file_path.empty()) {
+        log_file_.open(config.log_file_path, std::ios::out | std::ios::app);
+        if (!log_file_.is_open()) {
+            std::cerr << "Failed to open log file: " << config.log_file_path << std::endl;
+        } else {
+            std::cout << "Logging to file: " << config.log_file_path << std::endl;
+        }
+    }
     
     // Create event queue
     g_event_queue = std::make_unique<EventQueue>(config.async_queue_size);
@@ -369,14 +380,25 @@ void Logger::process_event(const LogEvent& event) {
         }
     }
     
-    // For now, print to stdout (in production would go to storage/backends)
-    if (!matched_patterns.empty()) {
-        std::cout << "🔍 PATTERN: " << matched_patterns.front() << " - ";
+    // Write to file if configured
+    if (log_file_.is_open()) {
+        std::lock_guard<std::mutex> file_lock(file_mutex_);
+        if (!matched_patterns.empty()) {
+            log_file_ << "[PATTERN:" << matched_patterns.front() << "] ";
+        }
+        log_file_ << processed_event.to_string() << std::endl;
     }
-    if (processed_event.is_anomalous()) {
-        std::cout << "🔴 " << processed_event.to_string() << std::endl;
-    } else if (processed_event.severity() >= Severity::WARNING) {
-        std::cout << "🟡 " << processed_event.to_string() << std::endl;
+    
+    // Print to console if enabled
+    if (config_.log_to_console) {
+        if (!matched_patterns.empty()) {
+            std::cout << "🔍 PATTERN: " << matched_patterns.front() << " - ";
+        }
+        if (processed_event.is_anomalous()) {
+            std::cout << "🔴 " << processed_event.to_string() << std::endl;
+        } else if (processed_event.severity() >= Severity::WARNING) {
+            std::cout << "🟡 " << processed_event.to_string() << std::endl;
+        }
     }
 }
 

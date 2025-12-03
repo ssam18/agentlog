@@ -120,6 +120,11 @@ int main() {
     agentlog::Config config;
     config.service_name = "my-service";
     config.enable_anomaly_detection = true;
+    
+    // Enable file logging (optional)
+    config.log_file_path = "app.log";
+    config.log_to_console = true;
+    
     agentlog::global::init(config);
     
     // Traditional logging
@@ -166,6 +171,34 @@ See the `examples/` directory:
 - **payment_service.cpp** - Real-world payment processing with anomaly detection
   ```bash
   ./examples/payment_service
+  ```
+
+### Demo Application
+
+- **payment_demo** - Full-featured payment processing demo with AI-powered logging
+  ```bash
+  cd demo/build
+  ./payment_demo
+  ```
+  
+  Features:
+  - Real-time anomaly detection with ML ensemble
+  - Automatic incident creation for critical events
+  - Integration with Jira/PagerDuty/Slack simulators
+  - File logging to `payment_demo.log`
+  - Console output with color-coded severity
+  - Simulates: fraud detection, timeouts, insufficient funds, successful payments
+  
+  View logs:
+  ```bash
+  # Watch real-time logs
+  tail -f payment_demo.log
+  
+  # Filter anomalies
+  grep ANOMALY payment_demo.log
+  
+  # View critical events
+  grep CRITICAL payment_demo.log
   ```
 
 ### Integration Examples
@@ -514,6 +547,10 @@ config.service_instance = "pod-7a8f9b";
 config.async_queue_size = 8192;
 config.worker_threads = 2;
 
+// File logging
+config.log_file_path = "./logs/app.log";  // Set to enable file logging
+config.log_to_console = true;              // Also log to console
+
 // Sampling
 config.sampling_rate = 1.0;  // 100% of events
 config.sample_anomalies_always = true;  // Always keep anomalies
@@ -532,34 +569,131 @@ agentlog::global::init(config);
 
 ### Integration Configuration
 
-Configure external integrations via environment variables:
+AgentLog supports real-time integration with Jira, PagerDuty, and Slack for automated incident management.
+
+#### Testing with Local Simulators
+
+For development and testing, use the included Docker-based simulators:
 
 ```bash
-# Jira Cloud Integration
+# Start simulators (from project root)
+docker-compose up -d
+
+# Simulators provide web UIs:
+# - Jira:       http://localhost:8080
+# - PagerDuty:  http://localhost:8081
+# - Slack:      http://localhost:8082
+# - Dashboard:  http://localhost:3000
+```
+
+Configure demo mode in code:
+
+```cpp
+agentlog::Config config;
+config.enable_auto_incidents = true;
+config.incident_anomaly_threshold = 0.75;  // Create incidents for anomalies > 0.75
+
+// Jira simulator
+config.jira.enabled = true;
+config.jira.url = "http://localhost:8080";
+config.jira.project_key = "AGENT";
+
+// PagerDuty simulator
+config.pagerduty.enabled = true;
+config.pagerduty.integration_key = "demo-service-key";
+
+// Slack simulator
+config.slack.enabled = true;
+config.slack.webhook_url = "http://localhost:8082/services/T00000000/B00000000/agentlog";
+config.slack.channel = "#agentlog-alerts";
+```
+
+#### Production Configuration
+
+##### Jira Cloud Integration
+
+1. **Create API Token**:
+   - Go to https://id.atlassian.com/manage-profile/security/api-tokens
+   - Click "Create API token"
+   - Give it a name (e.g., "AgentLog Integration")
+   - Copy the token (you won't see it again!)
+
+2. **Find Your Project Key**:
+   - Go to your Jira project
+   - Look at the URL: `https://YOUR-DOMAIN.atlassian.net/browse/PROJ-123`
+   - The project key is `PROJ`
+
+3. **Configure in code**:
+```cpp
+config.jira.enabled = true;
+config.jira.url = "https://your-domain.atlassian.net";
+config.jira.username = "your-email@company.com";  // Your Atlassian account email
+config.jira.api_token = "your-api-token-here";    // From step 1
+config.jira.project_key = "PROJ";                 // From step 2
+```
+
+##### PagerDuty Integration
+
+1. **Create Integration**:
+   - Go to **Services** → Select your service → **Integrations** tab
+   - Click **Add Integration**
+   - Choose **Events API V2**
+   - Give it a name (e.g., "AgentLog")
+   - Copy the **Integration Key**
+
+2. **Configure in code**:
+```cpp
+config.pagerduty.enabled = true;
+config.pagerduty.integration_key = "your-integration-key-here";  // From step 1
+```
+
+##### Slack Integration
+
+1. **Create Incoming Webhook**:
+   - Go to https://api.slack.com/apps
+   - Click **Create New App** → **From scratch**
+   - Name it "AgentLog" and select your workspace
+   - Go to **Incoming Webhooks** → Enable it
+   - Click **Add New Webhook to Workspace**
+   - Select the channel (e.g., `#alerts` or `#incidents`)
+   - Copy the **Webhook URL**
+
+2. **Configure in code**:
+```cpp
+config.slack.enabled = true;
+config.slack.webhook_url = "https://hooks.slack.com/services/T00000000/B00000000/xxxxxxxxxxxxxxxxxxxx";
+config.slack.channel = "#alerts";  // Optional: override default channel
+```
+
+#### Environment Variables (Alternative)
+
+You can also configure via environment variables:
+
+```bash
+# Jira
 export AGENTLOG_JIRA_URL="https://your-domain.atlassian.net"
-export AGENTLOG_JIRA_EMAIL="your-email@example.com"
+export AGENTLOG_JIRA_EMAIL="your-email@company.com"
 export AGENTLOG_JIRA_API_TOKEN="your-api-token"
 export AGENTLOG_JIRA_PROJECT_KEY="PROJ"
 
-# PagerDuty Integration
-export AGENTLOG_PAGERDUTY_ROUTING_KEY="your-routing-key"
+# PagerDuty
+export AGENTLOG_PAGERDUTY_INTEGRATION_KEY="your-integration-key"
 
-# Slack Integration
-export AGENTLOG_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+# Slack
+export AGENTLOG_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/T00/B00/xxx"
 ```
 
-Enable integrations in code:
+#### Automatic Incident Creation
 
-```cpp
-config.enable_jira_integration = true;
-config.enable_pagerduty_integration = true;
-config.enable_slack_integration = true;
-```
+When enabled, AgentLog automatically creates incidents when:
+- Anomaly score exceeds threshold (default: 0.8)
+- Critical patterns are detected (e.g., cascading failures)
+- Multiple correlated events indicate a problem
 
-When incidents are detected (score > threshold), AgentLog will automatically:
-- **Jira**: Create tickets with incident details, severity, and affected entities
-- **PagerDuty**: Trigger alerts with routing to on-call engineers
-- **Slack**: Send formatted notifications to specified channels
+Incident details sent to integrations:
+- **Jira**: Creates bug tickets with full incident context, severity, affected entities
+- **PagerDuty**: Triggers alerts with deduplication keys, routes to on-call engineers
+- **Slack**: Sends rich notifications with color-coded severity, incident details
 
 ## Testing
 

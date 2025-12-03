@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Jira - Tickets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0747A6, #0052CC);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            font-size: 32px;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0052CC;
+        }
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .stat-badge {
+            background: #0052CC;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .refresh-btn {
+            background: #0052CC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #0747A6;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .tickets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f4f5f7;
+        }
+        h1 {
+            color: #172B4D;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .clear-btn {
+            background: #DE350B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .clear-btn:hover {
+            background: #BF2600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B778C;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .empty-state-subtext {
+            font-size: 14px;
+            color: #97A0AF;
+        }
+        .tickets-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .tickets-table thead {
+            background: #F4F5F7;
+        }
+        .tickets-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #5E6C84;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tickets-table td {
+            padding: 16px;
+            border-bottom: 1px solid #EBECF0;
+            vertical-align: top;
+        }
+        .tickets-table tbody tr:hover {
+            background: #F4F5F7;
+        }
+        .ticket-key {
+            color: #0052CC;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .ticket-key:hover {
+            text-decoration: underline;
+        }
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .priority-critical {
+            background: #FFEBE6;
+            color: #BF2600;
+        }
+        .priority-high {
+            background: #FFF0B3;
+            color: #FF8B00;
+        }
+        .priority-medium {
+            background: #E6FCFF;
+            color: #0065FF;
+        }
+        .priority-low {
+            background: #E3FCEF;
+            color: #006644;
+        }
+        .ticket-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #5E6C84;
+        }
+        .ticket-summary {
+            color: #172B4D;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .ticket-description {
+            color: #5E6C84;
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 500px;
+        }
+        .labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .label {
+            background: #DFE1E6;
+            color: #172B4D;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .timestamp {
+            color: #6B778C;
+            font-size: 12px;
+        }
+        .auto-refresh {
+            color: #97A0AF;
+            font-size: 12px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">🎫</span>
+            <span class="logo-text">Mock Jira</span>
+        </div>
+        <div class="header-stats">
+            <span class="auto-refresh">Auto-refresh: 2s</span>
+            <span class="stat-badge" id="ticket-count">0 Tickets</span>
+            <button class="refresh-btn" onclick="loadTickets()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tickets-header">
+            <h1>📋 All Tickets</h1>
+            <button class="clear-btn" onclick="clearTickets()">🗑️ Clear All Tickets</button>
+        </div>
+
+        <div id="tickets-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-text">No tickets yet</div>
+                <div class="empty-state-subtext">Tickets will appear here when created via AgentLog</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getPriorityClass(priority) {
+            const map = {
+                'Critical': 'priority-critical',
+                'High': 'priority-high',
+                'Medium': 'priority-medium',
+                'Low': 'priority-low'
+            };
+            return map[priority] || 'priority-medium';
+        }
+
+        function getPriorityIcon(priority) {
+            const map = {
+                'Critical': '🔴',
+                'High': '🟡',
+                'Medium': '🔵',
+                'Low': '🟢'
+            };
+            return map[priority] || '🔵';
+        }
+
+        function getTypeIcon(type) {
+            const map = {
+                'Bug': '🐛',
+                'Task': '📋',
+                'Story': '📖',
+                'Epic': '⚡'
+            };
+            return map[type] || '📋';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function renderTickets(tickets) {
+            const content = document.getElementById('tickets-content');
+            document.getElementById('ticket-count').textContent = `${tickets.length} Ticket${tickets.length !== 1 ? 's' : ''}`;
+
+            if (tickets.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">No tickets yet</div>
+                        <div class="empty-state-subtext">Tickets will appear here when created via AgentLog</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="tickets-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Summary</th>
+                            <th>Priority</th>
+                            <th>Labels</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            tickets.forEach(ticket => {
+                const fields = ticket.fields;
+                const priority = fields.priority?.name || 'Medium';
+                const issueType = fields.issuetype?.name || 'Task';
+                const labels = fields.labels || [];
+
+                html += `
+                    <tr>
+                        <td><a href="#" class="ticket-key">${ticket.key}</a></td>
+                        <td><span class="ticket-type">${getTypeIcon(issueType)} ${issueType}</span></td>
+                        <td>
+                            <div class="ticket-summary">${fields.summary || 'No summary'}</div>
+                            ${fields.description ? `<div class="ticket-description">${fields.description}</div>` : ''}
+                        </td>
+                        <td>
+                            <span class="priority-badge ${getPriorityClass(priority)}">
+                                ${getPriorityIcon(priority)} ${priority}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="labels">
+                                ${labels.map(label => `<span class="label">${label}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td><span class="timestamp">${formatDate(ticket.created)}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        async function loadTickets() {
+            try {
+                const response = await fetch('/tickets');
+                const tickets = await response.json();
+                renderTickets(tickets);
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+            }
+        }
+
+        async function clearTickets() {
+            if (confirm('Are you sure you want to clear all tickets?')) {
+                try {
+                    await fetch('/tickets/clear', { method: 'POST' });
+                    loadTickets();
+                } catch (error) {
+                    console.error('Error clearing tickets:', error);
+                }
+            }
+        }
+
+        // Initial load
+        loadTickets();
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadTickets, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentLog Simulator Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stat-count {
+            font-size: 32px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 50px;
+        }
+        
+        .jira-count { color: #0052CC; background: #E3FCEF; }
+        .pagerduty-count { color: #E03C31; background: #FFE5E5; }
+        .slack-count { color: #4A154B; background: #F0E6FF; }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-clear {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .btn-clear:hover {
+            background: #ff3838;
+        }
+        
+        .items-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .item {
+            background: #f8f9fa;
+            border-left: 4px solid;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        
+        .item.jira { border-color: #0052CC; }
+        .item.pagerduty { border-color: #E03C31; }
+        .item.slack { border-color: #4A154B; }
+        
+        .item-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .item-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .error {
+            color: #ff4757;
+            padding: 10px;
+            background: #ffe5e5;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .refresh-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2ecc71;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AgentLog Simulator Dashboard</h1>
+            <p class="subtitle">Real-time monitoring of Jira, PagerDuty, and Slack simulators <span class="refresh-indicator"></span></p>
+        </header>
+        
+        <div class="stats-grid">
+            <!-- Jira Card -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">🎫 Jira Tickets</span>
+                    <button class="btn btn-clear" onclick="clearService('jira')">Clear</button>
+                </div>
+                <div class="stat-count jira-count" id="jira-count">0</div>
+                <div class="items-list" id="jira-list"></div>
+            </div>
+            
+            <!-- PagerDuty Card -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">🚨 PagerDuty Incidents</span>
+                    <button class="btn btn-clear" onclick="clearService('pagerduty')">Clear</button>
+                </div>
+                <div class="stat-count pagerduty-count" id="pagerduty-count">0</div>
+                <div class="items-list" id="pagerduty-list"></div>
+            </div>
+            
+            <!-- Slack Card -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">💬 Slack Messages</span>
+                    <button class="btn btn-clear" onclick="clearService('slack')">Clear</button>
+                </div>
+                <div class="stat-count slack-count" id="slack-count">0</div>
+                <div class="items-list" id="slack-list"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>AgentLog Demo Environment | Auto-refreshes every 2 seconds</p>
+        </footer>
+    </div>
+    
+    <script>
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                // Update Jira
+                if (data.jira) {
+                    document.getElementById('jira-count').textContent = data.jira.total || 0;
+                    const jiraList = document.getElementById('jira-list');
+                    if (data.jira.error) {
+                        jiraList.innerHTML = `<div class="error">${data.jira.error}</div>`;
+                    } else {
+                        jiraList.innerHTML = data.jira.tickets.map(t => `
+                            <div class="item jira">
+                                <div class="item-title">${t.key}: ${t.fields.summary || 'No summary'}</div>
+                                <div class="item-meta">Priority: ${t.fields.priority?.name || 'N/A'} | Type: ${t.fields.issuetype?.name || 'Bug'}</div>
+                            </div>
+                        `).join('') || '<div class="item-meta" style="padding:10px;">No tickets yet</div>';
+                    }
+                }
+                
+                // Update PagerDuty
+                if (data.pagerduty) {
+                    document.getElementById('pagerduty-count').textContent = data.pagerduty.total || 0;
+                    const pdList = document.getElementById('pagerduty-list');
+                    if (data.pagerduty.error) {
+                        pdList.innerHTML = `<div class="error">${data.pagerduty.error}</div>`;
+                    } else {
+                        pdList.innerHTML = data.pagerduty.incidents.map(i => `
+                            <div class="item pagerduty">
+                                <div class="item-title">${i.dedup_key}</div>
+                                <div class="item-meta">Status: ${i.status} | Severity: ${i.payload?.severity || 'N/A'}</div>
+                            </div>
+                        `).join('') || '<div class="item-meta" style="padding:10px;">No incidents yet</div>';
+                    }
+                }
+                
+                // Update Slack
+                if (data.slack) {
+                    document.getElementById('slack-count').textContent = data.slack.total || 0;
+                    const slackList = document.getElementById('slack-list');
+                    if (data.slack.error) {
+                        slackList.innerHTML = `<div class="error">${data.slack.error}</div>`;
+                    } else {
+                        slackList.innerHTML = data.slack.messages.map(m => `
+                            <div class="item slack">
+                                <div class="item-title">${m.text || (m.attachments?.[0]?.title || 'Message')}</div>
+                                <div class="item-meta">Channel: ${m.channel || '#general'} | From: ${m.username || 'bot'}</div>
+                            </div>
+                        `).join('') || '<div class="item-meta" style="padding:10px;">No messages yet</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+        
+        async function clearService(service) {
+            try {
+                await fetch(`/api/clear/${service}`, { method: 'POST' });
+                fetchStats();
+            } catch (error) {
+                console.error(`Error clearing ${service}:`, error);
+            }
+        }
+        
+        // Initial fetch
+        fetchStats();
+        
+        // Auto-refresh every 2 seconds
+        setInterval(fetchStats, 2000);
+    </script>
+</body>
+</html>

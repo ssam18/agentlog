@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Slack - Messages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #611f69, #4A154B);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            font-size: 32px;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #611f69;
+        }
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .stat-badge {
+            background: #611f69;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .refresh-btn {
+            background: #611f69;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #4A154B;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .messages-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f4f5f7;
+        }
+        h1 {
+            color: #172B4D;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .clear-btn {
+            background: #DE350B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .clear-btn:hover {
+            background: #BF2600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B778C;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .empty-state-subtext {
+            font-size: 14px;
+            color: #97A0AF;
+        }
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message-card {
+            border: 1px solid #DFE1E6;
+            border-radius: 8px;
+            padding: 16px;
+            transition: box-shadow 0.2s;
+            background: #FAFBFC;
+        }
+        .message-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .channel-badge {
+            background: #611f69;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .bot-badge {
+            background: #DFE1E6;
+            color: #5E6C84;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .timestamp {
+            color: #6B778C;
+            font-size: 12px;
+        }
+        .message-text {
+            color: #172B4D;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+        .attachments {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .attachment {
+            border-left: 4px solid #DFE1E6;
+            padding: 12px;
+            background: white;
+            border-radius: 4px;
+        }
+        .attachment.danger {
+            border-left-color: #DE350B;
+            background: #FFF5F5;
+        }
+        .attachment.warning {
+            border-left-color: #FF8B00;
+            background: #FFFCF5;
+        }
+        .attachment.good {
+            border-left-color: #36B37E;
+            background: #F5FFF9;
+        }
+        .attachment-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+        .attachment-text {
+            font-size: 13px;
+            color: #5E6C84;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .attachment-fields {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .attachment-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .attachment-field.long {
+            grid-column: 1 / -1;
+        }
+        .field-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #5E6C84;
+            text-transform: uppercase;
+        }
+        .field-value {
+            font-size: 13px;
+            color: #172B4D;
+        }
+        .blocks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .block-section {
+            padding: 8px 0;
+        }
+        .block-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+        .block-text {
+            font-size: 14px;
+            color: #5E6C84;
+            line-height: 1.4;
+        }
+        .block-divider {
+            border-top: 1px solid #DFE1E6;
+            margin: 8px 0;
+        }
+        .auto-refresh {
+            color: #97A0AF;
+            font-size: 12px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">💬</span>
+            <span class="logo-text">Mock Slack</span>
+        </div>
+        <div class="header-stats">
+            <span class="auto-refresh">Auto-refresh: 2s</span>
+            <span class="stat-badge" id="message-count">0 Messages</span>
+            <button class="refresh-btn" onclick="loadMessages()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="messages-header">
+            <h1>📬 All Messages</h1>
+            <button class="clear-btn" onclick="clearMessages()">🗑️ Clear All Messages</button>
+        </div>
+
+        <div id="messages-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-text">No messages yet</div>
+                <div class="empty-state-subtext">Messages will appear here when sent via AgentLog</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function getAttachmentClass(color) {
+            if (!color) return '';
+            if (color === 'danger' || color === '#ff0000') return 'danger';
+            if (color === 'warning' || color === '#ffcc00') return 'warning';
+            if (color === 'good' || color === '#36a64f') return 'good';
+            return '';
+        }
+
+        function renderMessages(messages) {
+            const content = document.getElementById('messages-content');
+            document.getElementById('message-count').textContent = `${messages.length} Message${messages.length !== 1 ? 's' : ''}`;
+
+            if (messages.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <div class="empty-state-text">No messages yet</div>
+                        <div class="empty-state-subtext">Messages will appear here when sent via AgentLog</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="messages-list">';
+
+            messages.forEach(msg => {
+                html += `
+                    <div class="message-card">
+                        <div class="message-header">
+                            <div class="message-meta">
+                                <span class="channel-badge">${msg.channel || '#general'}</span>
+                                ${msg.username ? `<span class="bot-badge">🤖 ${msg.username}</span>` : ''}
+                            </div>
+                            <span class="timestamp">${formatDate(msg.timestamp)}</span>
+                        </div>
+                `;
+
+                if (msg.text) {
+                    html += `<div class="message-text">${msg.text}</div>`;
+                }
+
+                // Render attachments
+                if (msg.attachments && msg.attachments.length > 0) {
+                    html += '<div class="attachments">';
+                    msg.attachments.forEach(att => {
+                        const attClass = getAttachmentClass(att.color);
+                        html += `<div class="attachment ${attClass}">`;
+                        
+                        if (att.title) {
+                            html += `<div class="attachment-title">${att.title}</div>`;
+                        }
+                        if (att.text) {
+                            html += `<div class="attachment-text">${att.text}</div>`;
+                        }
+                        
+                        if (att.fields && att.fields.length > 0) {
+                            html += '<div class="attachment-fields">';
+                            att.fields.forEach(field => {
+                                const fieldClass = field.short ? '' : 'long';
+                                html += `
+                                    <div class="attachment-field ${fieldClass}">
+                                        <span class="field-title">${field.title}</span>
+                                        <span class="field-value">${field.value}</span>
+                                    </div>
+                                `;
+                            });
+                            html += '</div>';
+                        }
+                        
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                // Render blocks
+                if (msg.blocks && msg.blocks.length > 0) {
+                    html += '<div class="blocks">';
+                    msg.blocks.forEach(block => {
+                        if (block.type === 'header') {
+                            html += `<div class="block-header">${block.text?.text || ''}</div>`;
+                        } else if (block.type === 'section') {
+                            html += `<div class="block-section"><div class="block-text">${block.text?.text || ''}</div></div>`;
+                        } else if (block.type === 'divider') {
+                            html += '<div class="block-divider"></div>';
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        async function loadMessages() {
+            try {
+                const response = await fetch('/messages');
+                const messages = await response.json();
+                renderMessages(messages);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        async function clearMessages() {
+            if (confirm('Are you sure you want to clear all messages?')) {
+                try {
+                    await fetch('/messages/clear', { method: 'POST' });
+                    loadMessages();
+                } catch (error) {
+                    console.error('Error clearing messages:', error);
+                }
+            }
+        }
+
+        // Initial load
+        loadMessages();
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadMessages, 2000);
+    </script>
+</body>
+</html>

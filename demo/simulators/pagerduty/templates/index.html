@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock PagerDuty - Incidents</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #04AA51, #027D3C);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            font-size: 32px;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #04AA51;
+        }
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .stat-badge {
+            background: #04AA51;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .stat-group {
+            display: flex;
+            gap: 10px;
+        }
+        .stat-mini {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .stat-triggered {
+            background: #FEE;
+            color: #C00;
+        }
+        .stat-acknowledged {
+            background: #FFFAED;
+            color: #E68619;
+        }
+        .stat-resolved {
+            background: #E3FCEF;
+            color: #04AA51;
+        }
+        .refresh-btn {
+            background: #04AA51;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #027D3C;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .incidents-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f4f5f7;
+        }
+        h1 {
+            color: #172B4D;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .clear-btn {
+            background: #DE350B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .clear-btn:hover {
+            background: #BF2600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B778C;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .empty-state-subtext {
+            font-size: 14px;
+            color: #97A0AF;
+        }
+        .incidents-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .incident-card {
+            border: 1px solid #DFE1E6;
+            border-radius: 8px;
+            padding: 20px;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .incident-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .incident-card.triggered {
+            border-left: 4px solid #C00;
+            background: #FFFAFA;
+        }
+        .incident-card.acknowledged {
+            border-left: 4px solid #E68619;
+            background: #FFFEF8;
+        }
+        .incident-card.resolved {
+            border-left: 4px solid #04AA51;
+            background: #F9FFFE;
+        }
+        .incident-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .incident-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .incident-icon {
+            font-size: 24px;
+        }
+        .incident-summary {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+        .incident-badges {
+            display: flex;
+            gap: 8px;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-triggered {
+            background: #FEE;
+            color: #C00;
+        }
+        .status-acknowledged {
+            background: #FFFAED;
+            color: #E68619;
+        }
+        .status-resolved {
+            background: #E3FCEF;
+            color: #04AA51;
+        }
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .severity-critical {
+            background: #FEE;
+            color: #C00;
+        }
+        .severity-error {
+            background: #FFEBE6;
+            color: #FF5630;
+        }
+        .severity-warning {
+            background: #FFF0B3;
+            color: #FF8B00;
+        }
+        .severity-info {
+            background: #E6FCFF;
+            color: #0065FF;
+        }
+        .incident-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .incident-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .field-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #5E6C84;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field-value {
+            font-size: 14px;
+            color: #172B4D;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        .incident-details {
+            background: #F4F5F7;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        .details-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #5E6C84;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .detail-item {
+            font-size: 13px;
+            color: #172B4D;
+            display: flex;
+            gap: 8px;
+        }
+        .detail-item::before {
+            content: '•';
+            color: #04AA51;
+            font-weight: bold;
+        }
+        .timestamp {
+            color: #6B778C;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .auto-refresh {
+            color: #97A0AF;
+            font-size: 12px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">🚨</span>
+            <span class="logo-text">Mock PagerDuty</span>
+        </div>
+        <div class="header-stats">
+            <span class="auto-refresh">Auto-refresh: 2s</span>
+            <div class="stat-group">
+                <span class="stat-mini stat-triggered" id="triggered-count">0 Triggered</span>
+                <span class="stat-mini stat-acknowledged" id="acked-count">0 Acked</span>
+                <span class="stat-mini stat-resolved" id="resolved-count">0 Resolved</span>
+            </div>
+            <span class="stat-badge" id="incident-count">0 Incidents</span>
+            <button class="refresh-btn" onclick="loadIncidents()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="incidents-header">
+            <h1>🔥 All Incidents</h1>
+            <button class="clear-btn" onclick="clearIncidents()">🗑️ Clear All Incidents</button>
+        </div>
+
+        <div id="incidents-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">✅</div>
+                <div class="empty-state-text">No incidents</div>
+                <div class="empty-state-subtext">All systems operational. Incidents will appear here when triggered.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getStatusClass(status) {
+            const map = {
+                'triggered': 'status-triggered',
+                'acknowledged': 'status-acknowledged',
+                'resolved': 'status-resolved'
+            };
+            return map[status] || 'status-triggered';
+        }
+
+        function getStatusIcon(status) {
+            const map = {
+                'triggered': '🔴',
+                'acknowledged': '🟡',
+                'resolved': '🟢'
+            };
+            return map[status] || '🔴';
+        }
+
+        function getSeverityClass(severity) {
+            const map = {
+                'critical': 'severity-critical',
+                'error': 'severity-error',
+                'warning': 'severity-warning',
+                'info': 'severity-info'
+            };
+            return map[severity] || 'severity-info';
+        }
+
+        function getSeverityIcon(severity) {
+            const map = {
+                'critical': '🔴',
+                'error': '🟠',
+                'warning': '🟡',
+                'info': '🔵'
+            };
+            return map[severity] || '🔵';
+        }
+
+        function getIncidentIcon(status) {
+            const map = {
+                'triggered': '🚨',
+                'acknowledged': '⚠️',
+                'resolved': '✅'
+            };
+            return map[status] || '🚨';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function renderIncidents(data) {
+            const content = document.getElementById('incidents-content');
+            const incidents = data.incidents || [];
+            const stats = data.stats || { triggered: 0, acknowledged: 0, resolved: 0 };
+
+            document.getElementById('incident-count').textContent = `${incidents.length} Incident${incidents.length !== 1 ? 's' : ''}`;
+            document.getElementById('triggered-count').textContent = `${stats.triggered} Triggered`;
+            document.getElementById('acked-count').textContent = `${stats.acknowledged} Acked`;
+            document.getElementById('resolved-count').textContent = `${stats.resolved} Resolved`;
+
+            if (incidents.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <div class="empty-state-text">No incidents</div>
+                        <div class="empty-state-subtext">All systems operational. Incidents will appear here when triggered.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="incidents-list">';
+
+            incidents.forEach(incident => {
+                const payload = incident.payload || {};
+                const customDetails = payload.custom_details || {};
+                
+                html += `
+                    <div class="incident-card ${incident.status}">
+                        <div class="incident-header">
+                            <div class="incident-title">
+                                <span class="incident-icon">${getIncidentIcon(incident.status)}</span>
+                                <span class="incident-summary">${payload.summary || 'No summary'}</span>
+                            </div>
+                            <div class="incident-badges">
+                                <span class="status-badge ${getStatusClass(incident.status)}">
+                                    ${getStatusIcon(incident.status)} ${incident.status}
+                                </span>
+                                <span class="severity-badge ${getSeverityClass(payload.severity || 'info')}">
+                                    ${getSeverityIcon(payload.severity || 'info')} ${payload.severity || 'info'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="incident-body">
+                            <div class="incident-field">
+                                <span class="field-label">Dedup Key</span>
+                                <span class="field-value">${incident.dedup_key || 'N/A'}</span>
+                            </div>
+                            <div class="incident-field">
+                                <span class="field-label">Source</span>
+                                <span class="field-value">${payload.source || 'N/A'}</span>
+                            </div>
+                            <div class="incident-field">
+                                <span class="field-label">Incident Number</span>
+                                <span class="field-value">#${incident.incident_number}</span>
+                            </div>
+                            <div class="incident-field">
+                                <span class="field-label">Created</span>
+                                <span class="field-value">${formatDate(incident.created)}</span>
+                            </div>
+                        </div>
+                `;
+
+                if (Object.keys(customDetails).length > 0) {
+                    html += `
+                        <div class="incident-details">
+                            <div class="details-title">Custom Details</div>
+                            <div class="details-list">
+                    `;
+                    for (const [key, value] of Object.entries(customDetails)) {
+                        html += `<div class="detail-item">${key}: ${value}</div>`;
+                    }
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        async function loadIncidents() {
+            try {
+                const response = await fetch('/incidents');
+                const data = await response.json();
+                renderIncidents(data);
+            } catch (error) {
+                console.error('Error loading incidents:', error);
+            }
+        }
+
+        async function clearIncidents() {
+            if (confirm('Are you sure you want to clear all incidents?')) {
+                try {
+                    await fetch('/incidents/clear', { method: 'POST' });
+                    loadIncidents();
+                } catch (error) {
+                    console.error('Error clearing incidents:', error);
+                }
+            }
+        }
+
+        // Initial load
+        loadIncidents();
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadIncidents, 2000);
+    </script>
+</body>
+</html>

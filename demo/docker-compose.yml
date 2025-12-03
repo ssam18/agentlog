@@ -1,0 +1,107 @@
+services:
+  # RocksDB - Persistent storage for AgentLog
+  # Note: RocksDB integration is prepared but not yet implemented in AgentLog
+  # This container is included for future use
+  rocksdb:
+    image: alpine:latest
+    container_name: agentlog-rocksdb
+    command: sh -c "mkdir -p /data/rocksdb && tail -f /dev/null"
+    volumes:
+      - rocksdb-data:/data/rocksdb
+    networks:
+      - agentlog-net
+    healthcheck:
+      test: ["CMD", "test", "-d", "/data/rocksdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Mock Jira Server - Simulates Jira ticket creation API
+  mock-jira:
+    build:
+      context: ./simulators/jira
+      dockerfile: Dockerfile
+    container_name: agentlog-mock-jira
+    environment:
+      - PORT=8080
+      - SERVICE_NAME=Mock Jira Server
+    ports:
+      - "8080:8080"
+    networks:
+      - agentlog-net
+    volumes:
+      - ./simulators/jira:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Mock PagerDuty Server - Simulates PagerDuty Events API v2
+  mock-pagerduty:
+    build:
+      context: ./simulators/pagerduty
+      dockerfile: Dockerfile
+    container_name: agentlog-mock-pagerduty
+    environment:
+      - PORT=8081
+      - SERVICE_NAME=Mock PagerDuty Server
+    ports:
+      - "8081:8081"
+    networks:
+      - agentlog-net
+    volumes:
+      - ./simulators/pagerduty:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Mock Slack Server - Simulates Slack Incoming Webhooks
+  mock-slack:
+    build:
+      context: ./simulators/slack
+      dockerfile: Dockerfile
+    container_name: agentlog-mock-slack
+    environment:
+      - PORT=8082
+      - SERVICE_NAME=Mock Slack Server
+    ports:
+      - "8082:8082"
+    networks:
+      - agentlog-net
+    volumes:
+      - ./simulators/slack:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Web Dashboard - View all incoming webhooks in real-time
+  dashboard:
+    build:
+      context: ./simulators/dashboard
+      dockerfile: Dockerfile
+    container_name: agentlog-dashboard
+    environment:
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    networks:
+      - agentlog-net
+    volumes:
+      - ./simulators/dashboard:/app
+    depends_on:
+      - mock-jira
+      - mock-pagerduty
+      - mock-slack
+
+networks:
+  agentlog-net:
+    driver: bridge
+
+volumes:
+  rocksdb-data:
+    driver: local

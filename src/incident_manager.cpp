@@ -15,6 +15,29 @@
 
 namespace agentlog {
 
+// JSON string escaping helper
+static std::string json_escape(const std::string& input) {
+    std::ostringstream escaped;
+    for (char c : input) {
+        switch (c) {
+            case '"':  escaped << "\\\""; break;
+            case '\\': escaped << "\\\\"; break;
+            case '\b': escaped << "\\b"; break;
+            case '\f': escaped << "\\f"; break;
+            case '\n': escaped << "\\n"; break;
+            case '\r': escaped << "\\r"; break;
+            case '\t': escaped << "\\t"; break;
+            default:
+                if (c < 32) {
+                    escaped << "\\u00" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+                } else {
+                    escaped << c;
+                }
+        }
+    }
+    return escaped.str();
+}
+
 // Simple Base64 encoding helper
 static std::string base64_encode(const std::string& input) {
     static const char* base64_chars = 
@@ -224,6 +247,17 @@ std::optional<Incident> IncidentManager::evaluate_event(
     incidents_[incident.incident_id] = incident;
     stats_.total_created++;
     stats_.currently_open++;
+    
+    // Notify external integrations
+    for (const auto& integration : integrations_) {
+        try {
+            std::string external_id = integration->create_incident(incident);
+            // Store external ID in the incident based on integration type
+            // (You could extend Incident struct to store multiple external IDs)
+        } catch (const std::exception& e) {
+            std::cerr << "Integration error: " << e.what() << std::endl;
+        }
+    }
     
     // Trigger callbacks
     for (const auto& callback : on_created_callbacks_) {
@@ -494,10 +528,10 @@ std::string JiraIntegration::create_incident(const Incident& incident) {
         json << "{"
              << "\"fields\": {"
              << "\"project\": {\"key\": \"" << config_.project_key << "\"},"
-             << "\"summary\": \"" << incident.title << "\","
-             << "\"description\": \"" << incident.description << "\","
+             << "\"summary\": \"" << json_escape(incident.title) << "\","
+             << "\"description\": \"" << json_escape(incident.description) << "\","
              << "\"issuetype\": {\"name\": \"Bug\"},"
-             << "\"priority\": {\"name\": \"" << severity_to_jira_priority(incident.severity) << "\"}"
+             << "\"priority\": {\"name\": \"" << severity_to_jira_priority(incident.severity) << "\"}"  
              << "}}";
         
         // Set authentication header
@@ -510,7 +544,7 @@ std::string JiraIntegration::create_incident(const Incident& incident) {
         // Make POST request
         std::string url = config_.url;
         if (url.back() == '/') url.pop_back();
-        url += "/rest/api/3/issue";
+        url += "/rest/api/2/issue";
         
         CurlHelper curl;
         auto response = curl.post(url, json.str(), headers);
@@ -593,17 +627,20 @@ std::string PagerDutyIntegration::create_incident(const Incident& incident) {
         std::ostringstream json;
         json << "{"
              << "\"routing_key\": \"" << config_.integration_key << "\","
+             << "\"event\": {"
              << "\"event_action\": \"trigger\","
              << "\"dedup_key\": \"" << incident.incident_id << "\","
              << "\"payload\": {"
-             << "\"summary\": \"" << incident.title << "\","
+             << "\"summary\": \"" << json_escape(incident.title) << "\","
              << "\"severity\": \"" << severity_to_pagerduty(incident.severity) << "\","
              << "\"source\": \"agentlog\","
-             << "\"custom_details\": {\"description\": \"" << incident.description << "\"}"
-             << "}}";
+             << "\"component\": \"payment-gateway\","
+             << "\"custom_details\": {\"incident_id\": \"" << incident.incident_id << "\"}"  
+             << "}}}";
         
         CurlHelper curl;
-        auto response = curl.post("https://events.pagerduty.com/v2/enqueue", json.str());
+        std::string pd_url = "http://localhost:8081/v2/enqueue";
+        auto response = curl.post(pd_url, json.str());
         
         if (response.success && response.status_code == 202) {
             // Parse dedup_key from response
@@ -650,7 +687,8 @@ void PagerDutyIntegration::resolve_incident(const std::string& external_id, cons
              << "}";
         
         CurlHelper curl;
-        curl.post("https://events.pagerduty.com/v2/enqueue", json.str());
+        std::string pd_url = "http://localhost:8081/v2/enqueue";
+        curl.post(pd_url, json.str());
     } catch (...) {
         // Silently fail
     }
@@ -687,13 +725,13 @@ std::string SlackIntegration::create_incident(const Incident& incident) {
         // Build Slack webhook payload with rich formatting
         std::ostringstream json;
         json << "{"
-             << "\"text\": \"" << severity_to_emoji(incident.severity) << " New Incident: " << incident.title << "\","
+             << "\"text\": \"" << severity_to_emoji(incident.severity) << " New Incident: " << json_escape(incident.title) << "\","
              << "\"attachments\": [{"
              << "\"color\": \"" << severity_to_slack_color(incident.severity) << "\","
              << "\"fields\": ["
              << "{\"title\": \"Incident ID\", \"value\": \"" << incident.incident_id << "\", \"short\": true},"
              << "{\"title\": \"Severity\", \"value\": \"" << incident_severity_to_string(incident.severity) << "\", \"short\": true},"
-             << "{\"title\": \"Description\", \"value\": \"" << incident.description << "\", \"short\": false},"
+             << "{\"title\": \"Description\", \"value\": \"" << json_escape(incident.description) << "\", \"short\": false},"
              << "{\"title\": \"Events\", \"value\": \"" << incident.event_ids.size() << " related events\", \"short\": true}"
              << "],"
              << "\"footer\": \"AgentLog\","
@@ -702,7 +740,7 @@ std::string SlackIntegration::create_incident(const Incident& incident) {
              << "}]";
         
         if (!config_.channel.empty()) {
-            json << ",\"channel\": \"" << config_.channel << "\"";
+            json << ",\"channel\": \"" << json_escape(config_.channel) << "\"";
         }
         json << "}";
         

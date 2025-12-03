@@ -1,0 +1,110 @@
+{
+  "agentlog": {
+    "service_name": "payment-service",
+    "environment": "demo",
+    "version": "1.0.0",
+    
+    "anomaly_detection": {
+      "enabled": true,
+      "threshold": 0.8,
+      "window_size": 100
+    },
+    
+    "pattern_recognition": {
+      "enabled": true,
+      "min_occurrences": 3,
+      "time_window_seconds": 300
+    },
+    
+    "correlation": {
+      "enabled": true,
+      "correlation_window_seconds": 60
+    },
+    
+    "integrations": {
+      "jira": {
+        "enabled": true,
+        "url": "http://mock-jira:8080",
+        "project_key": "AGENT",
+        "triggers": {
+          "on_critical_error": true,
+          "on_fraud_detection": true,
+          "on_repeated_failures": true
+        },
+        "issue_defaults": {
+          "issuetype": {
+            "name": "Bug"
+          },
+          "priority": {
+            "name": "High"
+          },
+          "labels": ["agentlog", "auto-created"]
+        }
+      },
+      
+      "pagerduty": {
+        "enabled": true,
+        "url": "http://mock-pagerduty:8081/v2/enqueue",
+        "routing_key": "demo-routing-key",
+        "triggers": {
+          "on_anomaly_score": 0.9,
+          "on_service_down": true,
+          "on_high_latency": true,
+          "latency_threshold_ms": 2000
+        },
+        "severity_mapping": {
+          "critical": "critical",
+          "error": "error",
+          "warning": "warning",
+          "info": "info"
+        }
+      },
+      
+      "slack": {
+        "enabled": true,
+        "webhook_url": "http://mock-slack:8082/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX",
+        "channel": "#agentlog-alerts",
+        "username": "AgentLog Bot",
+        "icon_emoji": ":robot_face:",
+        "triggers": {
+          "on_info": false,
+          "on_warning": true,
+          "on_error": true,
+          "on_critical": true,
+          "on_anomaly": true,
+          "on_pattern_detected": true
+        },
+        "formatting": {
+          "use_attachments": true,
+          "color_coding": {
+            "info": "good",
+            "warning": "warning",
+            "error": "danger",
+            "critical": "danger"
+          }
+        }
+      },
+      
+      "rocksdb": {
+        "enabled": false,
+        "path": "/data/rocksdb",
+        "note": "RocksDB integration coming soon"
+      }
+    },
+    
+    "thresholds": {
+      "error_rate_per_minute": 10,
+      "anomaly_score": 0.85,
+      "latency_p99_ms": 1000,
+      "consecutive_failures": 5
+    },
+    
+    "logging": {
+      "console_output": true,
+      "colored_output": true,
+      "log_level": "INFO",
+      "include_timestamp": true,
+      "include_metrics": true
+    }
+  }
+}

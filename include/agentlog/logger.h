@@ -9,6 +9,7 @@
 #include <mutex>
 #include <thread>
 #include <deque>
+#include <fstream>
 
 namespace agentlog {
 
@@ -43,6 +44,10 @@ struct Config {
     // Storage
     std::string storage_path{"./agentlog_data"};
     size_t max_storage_mb{1024};  // 1GB default
+    
+    // File logging
+    std::string log_file_path;     // If set, logs will be written to this file
+    bool log_to_console{true};     // Log to stdout/stderr
     
     // Phase 3: External Integrations
     // Jira Cloud REST API configuration
@@ -140,6 +145,8 @@ private:
     bool shutdown_requested_{false};
     
     std::mutex mutex_;
+    std::mutex file_mutex_;  // Separate mutex for file I/O
+    std::ofstream log_file_;   // File output stream
     std::vector<EventCallback> event_callbacks_;
     std::vector<EventCallback> anomaly_callbacks_;
     
